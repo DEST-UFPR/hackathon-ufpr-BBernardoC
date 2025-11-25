@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { Box, Container } from "@mui/material";
+import { Container } from "@mui/material";
 import { DashboardLayout } from "@/components/Layout/DashboardLayout";
 import { MetricsCards } from "@/components/Dashboard/MetricsCards";
-import {
-  FiltersPanel,
+import FiltersPanel, {
   DashboardFilters,
 } from "@/components/Dashboard/FiltersPanel";
 import { ChartsSection } from "@/components/Dashboard/ChartsSection";
@@ -12,6 +11,7 @@ const Index = () => {
   const [filters, setFilters] = useState<DashboardFilters>({
     curso: "Todos",
     setorCurso: "Todos",
+    disciplina: "Todos",
     situacao: "Todos",
     questionario: "Todos",
   });
@@ -27,7 +27,6 @@ const Index = () => {
         <FiltersPanel filters={filters} onFiltersChange={handleFiltersChange} />
 
         <ChartsSection />
-
         <MetricsCards />
       </Container>
     </DashboardLayout>
