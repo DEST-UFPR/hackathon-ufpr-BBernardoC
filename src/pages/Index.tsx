@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Box, Container } from "@mui/material";
 import { DashboardLayout } from "@/components/Layout/DashboardLayout";
 import { MetricsCards } from "@/components/Dashboard/MetricsCards";
-import { FiltersPanel, DashboardFilters } from "@/components/Dashboard/FiltersPanel";
+import {
+  FiltersPanel,
+  DashboardFilters,
+} from "@/components/Dashboard/FiltersPanel";
 import { ChartsSection } from "@/components/Dashboard/ChartsSection";
-import { DataTable } from "@/components/Dashboard/DataTable";
 
 const Index = () => {
   const [filters, setFilters] = useState<DashboardFilters>({
@@ -22,13 +24,11 @@ const Index = () => {
   return (
     <DashboardLayout>
       <Container maxWidth={false} className="space-y-6">
-        <MetricsCards />
-        
         <FiltersPanel filters={filters} onFiltersChange={handleFiltersChange} />
-        
+
         <ChartsSection />
-        
-        <DataTable />
+
+        <MetricsCards />
       </Container>
     </DashboardLayout>
   );
