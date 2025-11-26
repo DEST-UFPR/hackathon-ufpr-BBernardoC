@@ -31,11 +31,13 @@ def excel_to_json(input_path, output_path=None):
 # -----------------------
 # Exemplo de uso:
 # -----------------------
-
 input_file = "/mnt/data/DadosAvDisciplinasEAD_1S2025.xlsx"
 output_file = "/mnt/data/output.json"
 
-json_data = excel_to_json(input_file, output_file)
+def _example():
+    json_data = excel_to_json(input_file, output_file)
+    print("Conversão concluída!")
+    print(f"Arquivo gerado em: {output_file}")
 
-print("Conversão concluída!")
-print(f"Arquivo gerado em: {output_file}")
+if __name__ == "__main__":
+    _example()

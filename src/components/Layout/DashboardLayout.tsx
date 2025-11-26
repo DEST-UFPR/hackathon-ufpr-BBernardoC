@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Box,
   Drawer,
@@ -39,6 +40,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -218,6 +220,15 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               disabled={importing}
             >
               {importing ? "Importando..." : "Importar"}
+            </Button>
+
+            {/* Novo: botão para página de login */}
+            <Button
+              color="inherit"
+              onClick={() => navigate("/login")}
+              sx={{ ml: 1 }}
+            >
+              Entrar
             </Button>
           </div>
         </Toolbar>
