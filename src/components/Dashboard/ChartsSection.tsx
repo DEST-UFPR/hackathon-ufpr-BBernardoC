@@ -11,7 +11,6 @@ import {
 } from "recharts";
 import { DashboardFilters } from "@/components/Dashboard/FiltersPanel";
 import { transformarDadosPesquisa } from "@/utils/transformarDadosPesquisa";
-import dadosReais from "@/utils/dados_disciplinaPresencial.json";
 import { DadoPesquisa } from "@/types/DadoPesquisa";
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -78,31 +77,58 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-export default function Grafico({ filters }: { filters: DashboardFilters }) {
-  const dados = dadosReais as DadoPesquisa[];
+interface Props {
+  filters: DashboardFilters;
+  dados: DadoPesquisa[]; // Recebe os dados como prop!
+}
+
+export default function Grafico({ filters, dados }: Props) {
+  // Se não houver dados carregados, mostra mensagem
+  if (!dados || dados.length === 0) {
+    return (
+      <Paper className="p-6 border rounded-xl">
+        <Typography variant="h6" className="font-bold mb-4">
+          Distribuição percentual das respostas por pergunta (%)
+        </Typography>
+        <Typography variant="body1" className="text-gray-500 text-center py-8">
+          Selecione um tipo de pesquisa para visualizar os dados.
+        </Typography>
+      </Paper>
+    );
+  }
 
   const dadosFiltrados = dados.filter((item) => {
     const setorMatch =
       filters.setorCurso.length === 0 ||
-      filters.setorCurso.includes(item.setorCurso);
+      filters.setorCurso.includes(item.SETOR_CURSO);
 
     const cursoMatch =
-      filters.curso.length === 0 || filters.curso.includes(item.curso);
+      filters.curso.length === 0 || filters.curso.includes(item.CURSO);
 
     const disciplinaMatch =
       filters.disciplina.length === 0 ||
-      filters.disciplina.includes(item.disciplina);
+      filters.disciplina.includes(item.NOME_DISCIPLINA);
+
+    const lotacaoMatch =
+      filters.lotacao.length === 0 ||
+      filters.lotacao.includes(item.LOTACAO || "");
 
     const perguntaMatch =
-      filters.pergunta.length === 0 || filters.pergunta.includes(item.pergunta);
+      filters.pergunta.length === 0 || filters.pergunta.includes(item.PERGUNTA);
 
-    return setorMatch && cursoMatch && disciplinaMatch && perguntaMatch;
+    return (
+      setorMatch &&
+      cursoMatch &&
+      disciplinaMatch &&
+      perguntaMatch &&
+      lotacaoMatch
+    );
   });
 
   const dadosGraficoOriginal = transformarDadosPesquisa(dadosFiltrados);
 
   // ===== LISTA COMPLETA DE PERGUNTAS (para manter índice correto) =====
-  const todasPerguntas = Array.from(new Set(dados.map((d) => d.pergunta)));
+  const todasPerguntas = Array.from(new Set(dados.map((d) => d.PERGUNTA)));
 
   // ===== AGRUPAMENTO DAS RESPOSTAS =====
   const dadosGrafico = dadosGraficoOriginal.map((item: any) => {
@@ -115,7 +141,7 @@ export default function Grafico({ filters }: { filters: DashboardFilters }) {
 
     return {
       ...item,
-      indiceOriginal, // Adiciona o índice original
+      indiceOriginal,
       Positivo: Number(positivo.toFixed(2)),
       Neutro: Number(neutro.toFixed(2)),
       Negativo: Number(negativo.toFixed(2)),

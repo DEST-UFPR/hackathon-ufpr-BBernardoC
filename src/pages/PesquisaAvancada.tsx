@@ -11,19 +11,21 @@ import GraficoDuplo from "@/components/DashboardPesquisa/GrafComparativo";
 import ComparisonCards from "@/components/DashboardPesquisa/MetricComp";
 const PesquisaComparativa = () => {
   const [filtersLeft, setFiltersLeft] = useState<DashboardFilters>({
+    tipoPesquisa: "",
     setorCurso: [],
     curso: [],
     disciplina: [],
     pergunta: [],
-    questionario: "Todos",
+    lotacao: [],
   });
 
   const [filtersRight, setFiltersRight] = useState<DashboardFilters>({
+    tipoPesquisa: "",
     setorCurso: [],
     curso: [],
     disciplina: [],
     pergunta: [],
-    questionario: "Todos",
+    lotacao: [],
   });
 
   return (
