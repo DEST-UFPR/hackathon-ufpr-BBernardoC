@@ -10,7 +10,7 @@ import {
 } from "@mui/icons-material";
 import { DashboardFilters } from "@/components/Dashboard/FiltersPanel";
 import { transformarDadosPesquisa } from "@/utils/transformarDadosPesquisa";
-import dadosReais from "../../../cache/disciplina_presencial.json";
+import dadosReais from "@/utils/dados_disciplinaPresencial.json";
 import { DadoPesquisa } from "@/types/DadoPesquisa";
 
 interface Props {
@@ -33,14 +33,14 @@ function calcularMetricas(filters: DashboardFilters): MetricData {
   const dadosFiltrados = dados.filter((item) => {
     const setorMatch =
       filters.setorCurso.length === 0 ||
-      filters.setorCurso.includes(item.SETOR_CURSO);
+      filters.setorCurso.includes(item.setorCurso);
     const cursoMatch =
-      filters.curso.length === 0 || filters.curso.includes(item.CURSO);
+      filters.curso.length === 0 || filters.curso.includes(item.curso);
     const disciplinaMatch =
       filters.disciplina.length === 0 ||
-      filters.disciplina.includes(item.NOME_DISCIPLINA);
+      filters.disciplina.includes(item.disciplina);
     const perguntaMatch =
-      filters.pergunta.length === 0 || filters.pergunta.includes(item.PERGUNTA);
+      filters.pergunta.length === 0 || filters.pergunta.includes(item.pergunta);
 
     return setorMatch && cursoMatch && disciplinaMatch && perguntaMatch;
   });
@@ -48,10 +48,10 @@ function calcularMetricas(filters: DashboardFilters): MetricData {
   const dadosTransformados = transformarDadosPesquisa(dadosFiltrados);
 
   const totalRespostas = dadosFiltrados.length;
-  const totalCursos = new Set(dadosFiltrados.map((d) => d.CURSO)).size;
-  const totalDisciplinas = new Set(dadosFiltrados.map((d) => d.NOME_DISCIPLINA))
+  const totalCursos = new Set(dadosFiltrados.map((d) => d.curso)).size;
+  const totalDisciplinas = new Set(dadosFiltrados.map((d) => d.disciplina))
     .size;
-  const totalPessoas = new Set(dadosFiltrados.map((d) => d.ID_PESQUISA)).size;
+  const totalPessoas = new Set(dadosFiltrados.map((d) => d.id_pesquisa)).size;
 
   let somaPositivo = 0;
   let somaTotal = 0;

@@ -1,8 +1,8 @@
 import { Paper, Typography, Box } from "@mui/material";
 import { Assessment, School, MenuBook, TrendingUp } from "@mui/icons-material";
 import { transformarDadosPesquisa } from "@/utils/transformarDadosPesquisa";
+import dadosReais from "@/utils/dados_disciplinaPresencial.json";
 import { DadoPesquisa } from "@/types/DadoPesquisa";
-import { DashboardFilters } from "@/components/Dashboard/FiltersPanel";
 
 interface MetricCardProps {
   title: string;
@@ -42,11 +42,9 @@ const MetricCard = ({ title, value, icon, color }: MetricCardProps) => {
   );
 };
 
-interface Props {
-  dados: DadoPesquisa[]; // Recebe os dados como prop!
-}
+export const MetricsCards = () => {
+  const dados = dadosReais as DadoPesquisa[];
 
-export const MetricsCards = ({ dados }: Props) => {
   const dadosTransformados = transformarDadosPesquisa(dados);
 
   // Total de pesquisas (unique por pergunta)
@@ -54,12 +52,12 @@ export const MetricsCards = ({ dados }: Props) => {
   const totalRespostas = dados.length;
 
   // Cursos únicos
-  const totalCursos = new Set(dados.map((d) => d.CURSO)).size;
+  const totalCursos = new Set(dados.map((d) => d.curso)).size;
 
   // Disciplinas únicas
-  const totalDisciplinas = new Set(dados.map((d) => d.NOME_DISCIPLINA)).size;
+  const totalDisciplinas = new Set(dados.map((d) => d.disciplina)).size;
 
-  const totalPessoas = new Set(dados.map((d) => d.ID_PESQUISA)).size;
+  const totalPessoas = new Set(dados.map((d) => d.id_pesquisa)).size;
 
   // Cálculo de aprovação (% Positivo)
   let somaPositivo = 0;
@@ -72,8 +70,10 @@ export const MetricsCards = ({ dados }: Props) => {
 
     somaPositivo += positivo;
     somaTotal += positivo + negativo + neutro;
+    console.log({ somaPositivo, somaTotal, positivo, negativo, neutro });
   });
-
+  console.log(dadosTransformados);
+  console.log(somaPositivo, somaTotal, totalRespostas);
   const taxaAprovacao =
     somaTotal === 0 ? 0 : ((somaPositivo / somaTotal) * 100).toFixed(2);
 

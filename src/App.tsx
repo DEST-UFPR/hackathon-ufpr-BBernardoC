@@ -8,7 +8,6 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import PesquisaComparativa from "./pages/PesquisaAvancada";
-import Prof from "./pages/PagProf";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -22,7 +21,6 @@ const App = () => (
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/avancado" element={<PesquisaComparativa />} />
-          <Route path="/professor" element={<Prof />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

@@ -6,35 +6,29 @@ import FiltersPanel, {
   DashboardFilters,
 } from "@/components/Dashboard/FiltersPanel";
 import ChartsSection from "@/components/Dashboard/ChartsSection";
-import { DadoPesquisa } from "@/types/DadoPesquisa";
 
 const Index = () => {
   const [filters, setFilters] = useState<DashboardFilters>({
-    tipoPesquisa: "disciplina_presencial",
     setorCurso: [],
     curso: [],
     disciplina: [],
     pergunta: [],
-    lotacao: [],
+    questionario: "Todos",
   });
-  const [dados, setDados] = useState<DadoPesquisa[]>([]);
 
   const handleFiltersChange = (newFilters: DashboardFilters) => {
     setFilters(newFilters);
+    console.log("Filtros aplicados:", newFilters);
   };
 
   return (
     <DashboardLayout>
       <Container maxWidth={false} className="space-y-6">
-        <MetricsCards dados={dados} />
+        <MetricsCards />
 
-        <FiltersPanel
-          filters={filters}
-          onFiltersChange={handleFiltersChange}
-          onDadosChange={setDados}
-        />
+        <FiltersPanel filters={filters} onFiltersChange={handleFiltersChange} />
 
-        <ChartsSection filters={filters} dados={dados} />
+        <ChartsSection filters={filters} />
       </Container>
     </DashboardLayout>
   );

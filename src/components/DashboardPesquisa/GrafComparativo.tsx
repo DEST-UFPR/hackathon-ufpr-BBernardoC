@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import { DashboardFilters } from "@/components/Dashboard/FiltersPanel";
 import { transformarDadosPesquisa } from "@/utils/transformarDadosPesquisa";
-import dadosReais from "../../../cache/disciplina_presencial.json";
+import dadosReais from "@/utils/dados_disciplinaPresencial.json";
 import { DadoPesquisa } from "@/types/DadoPesquisa";
 
 // ================= TOOLTIP CUSTOMIZADO =================
@@ -91,17 +91,17 @@ function GraficoIndividual({ filters, title }: GraficoIndividualProps) {
   const dadosFiltrados = dados.filter((item) => {
     const setorMatch =
       filters.setorCurso.length === 0 ||
-      filters.setorCurso.includes(item.SETOR_CURSO);
+      filters.setorCurso.includes(item.setorCurso);
 
     const cursoMatch =
-      filters.curso.length === 0 || filters.curso.includes(item.CURSO);
+      filters.curso.length === 0 || filters.curso.includes(item.curso);
 
     const disciplinaMatch =
       filters.disciplina.length === 0 ||
-      filters.disciplina.includes(item.NOME_DISCIPLINA);
+      filters.disciplina.includes(item.disciplina);
 
     const perguntaMatch =
-      filters.pergunta.length === 0 || filters.pergunta.includes(item.PERGUNTA);
+      filters.pergunta.length === 0 || filters.pergunta.includes(item.pergunta);
 
     return setorMatch && cursoMatch && disciplinaMatch && perguntaMatch;
   });
@@ -109,7 +109,7 @@ function GraficoIndividual({ filters, title }: GraficoIndividualProps) {
   const dadosGraficoOriginal = transformarDadosPesquisa(dadosFiltrados);
 
   // ===== LISTA COMPLETA DE PERGUNTAS (para manter índice correto) =====
-  const todasPerguntas = Array.from(new Set(dados.map((d) => d.PERGUNTA)));
+  const todasPerguntas = Array.from(new Set(dados.map((d) => d.pergunta)));
 
   // ===== AGRUPAMENTO DAS RESPOSTAS =====
   const dadosGrafico = dadosGraficoOriginal.map((item: any) => {

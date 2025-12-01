@@ -1,4 +1,5 @@
 import { DadoPesquisa } from "@/types/DadoPesquisa";
+
 export interface DadoGraficoPergunta {
   pergunta: string;
   [resposta: string]:
@@ -6,27 +7,26 @@ export interface DadoGraficoPergunta {
     | string
     | { percentual: number; quantidade: number };
 }
+
 export function transformarDadosPesquisa(
   dados: DadoPesquisa[]
 ): DadoGraficoPergunta[] {
-  const mapa = new Map<string, string[]>();
+  const mapa = new Map<string, Map<number, string>>();
 
-  // Agrupa todas as respostas por pergunta (sem usar ID_PESQUISA como chave)
   dados.forEach((item) => {
-    if (!mapa.has(item.PERGUNTA)) {
-      mapa.set(item.PERGUNTA, []);
+    if (!mapa.has(item.pergunta)) {
+      mapa.set(item.pergunta, new Map());
     }
-    mapa.get(item.PERGUNTA)!.push(item.RESPOSTA);
+    mapa.get(item.pergunta)!.set(item.id_pesquisa, item.resposta);
   });
 
   const resultado: DadoGraficoPergunta[] = [];
 
-  mapa.forEach((respostas, pergunta) => {
+  mapa.forEach((respostasPorPesquisa, pergunta) => {
     const contagem: Record<string, number> = {};
-    const total = respostas.length;
+    const total = respostasPorPesquisa.size;
 
-    // Conta cada resposta
-    respostas.forEach((resposta) => {
+    respostasPorPesquisa.forEach((resposta) => {
       contagem[resposta] = (contagem[resposta] || 0) + 1;
     });
 
@@ -55,6 +55,6 @@ export function transformarDadosPesquisa(
 
     resultado.push(dadosPergunta);
   });
-
+  console.log("Dados transformados para gráfico:", resultado);
   return resultado;
 }
