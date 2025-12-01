@@ -8,7 +8,7 @@ import FiltersPanel, {
 import ChartsSection from "@/components/Dashboard/ChartsSection";
 import { DadoPesquisa } from "@/types/DadoPesquisa";
 
-const Index = () => {
+const Prof = () => {
   const [filters, setFilters] = useState<DashboardFilters>({
     tipoPesquisa: "disciplina_presencial",
     setorCurso: [],
@@ -40,4 +40,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default Prof;

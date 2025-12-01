@@ -16,6 +16,15 @@ import {
   useTheme,
   useMediaQuery,
   Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -26,7 +35,6 @@ import {
   Settings,
   CloudUpload,
 } from "@mui/icons-material";
-import * as XLSX from "xlsx";
 
 const drawerWidth = 260;
 
@@ -34,95 +42,93 @@ interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
-// NOTE: Parsing will be handled by a Python/pandas backend. Frontend uploads files to that endpoint.
-
 export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [pageName, setPageName] = useState("");
+  const [pageType, setPageType] = useState("cursos");
+  const [pendingFiles, setPendingFiles] = useState<FileList | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  const handleFiles = async (files: FileList | null) => {
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFilesSelected = (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    setImporting(true);
+    setPendingFiles(files);
+    setModalOpen(true);
+  };
 
-    const form = new FormData();
-    const parsedResults: Array<any> = [];
-    const uploadFiles: File[] = [];
+  const handleModalClose = () => {
+    setModalOpen(false);
+    setPageName("");
+    setPageType("cursos");
+    setPendingFiles(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
-    const isExcel = (name: string) => /\.(xlsx|xls|xlsm|csv)$/i.test(name);
-
-    const readExcel = (file: File) =>
-      new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          try {
-            const data = e.target?.result;
-            if (!data) return resolve(null);
-            const wb = XLSX.read(data as ArrayBuffer, { type: "array" });
-            const sheets: Record<string, any[]> = {};
-            wb.SheetNames.forEach((sheetName) => {
-              const ws = wb.Sheets[sheetName];
-              const json = XLSX.utils.sheet_to_json(ws, { defval: null });
-              sheets[sheetName] = json;
-            });
-            resolve({ fileName: file.name, sheets });
-          } catch (err) {
-            reject(err);
-          }
-        };
-        reader.onerror = (err) => reject(err);
-        reader.readAsArrayBuffer(file);
-      });
-
-    for (let i = 0; i < files.length; i++) {
-      const f = files[i];
-      if (isExcel(f.name)) {
-        try {
-          const parsed = await readExcel(f);
-          if (parsed) parsedResults.push(parsed);
-        } catch (err) {
-          console.error("Error parsing", f.name, err);
-          alert(`Erro ao parsear ${f.name}. Veja console para detalhes.`);
-        }
-      } else {
-        uploadFiles.push(f);
-        form.append("files", f);
-      }
+  const handleModalConfirm = async () => {
+    if (!pageName.trim()) {
+      alert("Por favor, insira o nome da página.");
+      return;
     }
 
+    setModalOpen(false);
+    await handleFiles(pendingFiles, pageName.toLowerCase().trim(), pageType);
+    setPageName("");
+    setPageType("cursos");
+    setPendingFiles(null);
+  };
+
+  const handleFiles = async (
+    files: FileList | null,
+    pageNameLower: string,
+    pageType: string
+  ) => {
+    if (!files || files.length === 0) return;
+
+    setImporting(true);
+
     try {
-      // If there are non-excel files, send them to the backend as before
-      if (uploadFiles.length > 0) {
-        const resp = await fetch("http://localhost:5000/upload", {
+      // Envia cada arquivo individualmente para o backend
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const form = new FormData();
+
+        form.append("file", file);
+        form.append("pageName", pageNameLower);
+        form.append("type", pageType);
+
+        const resp = await fetch("http://localhost:5000/import_file", {
           method: "POST",
           body: form,
         });
 
         if (!resp.ok) {
           const text = await resp.text();
-          throw new Error(text || "Upload failed");
+          throw new Error(
+            `Erro ao enviar ${file.name}: ${text || "Upload failed"}`
+          );
         }
 
-        const results = await resp.json();
-        console.log("Server parsed results:", results);
+        const result = await resp.json();
       }
 
-      if (parsedResults.length > 0) {
-        console.log("Client parsed results:", parsedResults);
-        // You can now send `parsedResults` to your backend as JSON
-        // or store it in state and use it directly in the app.
-        alert(
-          `Importado ${parsedResults.length} documento(s) (Excel). Veja console para detalhes.`
-        );
-      } else if (uploadFiles.length > 0) {
-        alert("Arquivos enviados ao servidor. Veja console para detalhes.");
-      }
+      alert(
+        `${files.length} arquivo(s) importado(s) com sucesso para "${pageNameLower}" (tipo: ${pageType}).`
+      );
     } catch (err) {
       console.error(err);
-      alert("Erro ao importar arquivos. Verifique o console.");
+      alert(
+        `Erro ao importar arquivos: ${
+          err instanceof Error ? err.message : "Erro desconhecido"
+        }`
+      );
     } finally {
       setImporting(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -211,12 +217,12 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               accept=".pdf,application/pdf,.xls, .xlsx, application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               multiple
               style={{ display: "none" }}
-              onChange={(e) => handleFiles(e.target.files)}
+              onChange={(e) => handleFilesSelected(e.target.files)}
             />
             <Button
               color="inherit"
               startIcon={<CloudUpload />}
-              onClick={() => fileInputRef.current?.click()}
+              onClick={handleImportClick}
               disabled={importing}
             >
               {importing ? "Importando..." : "Importar"}
@@ -228,7 +234,6 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             >
               Home
             </Button>
-            {/* Novo: botão para página de login */}
             <Button
               color="inherit"
               onClick={() => navigate("/login")}
@@ -246,6 +251,60 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
         </Toolbar>
       </AppBar>
+
+      {/* Modal para nome da página */}
+      <Dialog
+        open={modalOpen}
+        onClose={handleModalClose}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Configuração da Importação</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Digite o nome da página"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={pageName}
+            onChange={(e) => setPageName(e.target.value)}
+            onKeyPress={(e) => {
+              if (e.key === "Enter") {
+                handleModalConfirm();
+              }
+            }}
+            helperText="O nome será convertido para minúsculas automaticamente"
+            sx={{ mb: 2 }}
+          />
+
+          <FormControl fullWidth variant="outlined">
+            <InputLabel id="page-type-label">Tipo</InputLabel>
+            <Select
+              labelId="page-type-label"
+              id="page-type-select"
+              value={pageType}
+              onChange={(e) => setPageType(e.target.value)}
+              label="Tipo"
+            >
+              <MenuItem value="cursos">Curso</MenuItem>
+              <MenuItem value="disciplina_ead">Disciplina Ead</MenuItem>
+              <MenuItem value="disciplina_presencial">
+                Disciplina presencial
+              </MenuItem>
+              <MenuItem value="institucional">Institucional</MenuItem>
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleModalClose}>Cancelar</Button>
+          <Button onClick={handleModalConfirm} variant="contained">
+            Confirmar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Box
         component="nav"
         sx={{ width: { md: drawerWidth }, flexShrink: { md: 0 } }}

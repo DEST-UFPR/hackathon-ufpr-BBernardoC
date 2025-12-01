@@ -9,7 +9,7 @@ import {
   TextField,
 } from "@mui/material";
 
-import dadosReais from "@/utils/dados_disciplinaPresencial.json";
+import dadosReais from "../../../cache/disciplina_presencial.json";
 import { DadoPesquisa } from "@/types/DadoPesquisa";
 
 // ================= INTERFACE =================
@@ -18,7 +18,7 @@ export interface DashboardFilters {
   curso: string[];
   disciplina: string[];
   pergunta: string[];
-  questionario: string;
+  lotacao: string[];
 }
 
 interface Props {
@@ -65,7 +65,7 @@ function FilterSide({
   };
 
   // ✅ SETORES
-  const setores = Array.from(new Set(dados.map((d) => d.setorCurso)));
+  const setores = Array.from(new Set(dados.map((d) => d.SETOR_CURSO)));
 
   // ✅ CURSOS BASEADOS NO SETOR
   const cursos =
@@ -74,8 +74,8 @@ function FilterSide({
       : Array.from(
           new Set(
             dados
-              .filter((d) => filters.setorCurso.includes(d.setorCurso))
-              .map((d) => d.curso)
+              .filter((d) => filters.setorCurso.includes(d.SETOR_CURSO))
+              .map((d) => d.CURSO)
           )
         );
 
@@ -88,10 +88,10 @@ function FilterSide({
             dados
               .filter(
                 (d) =>
-                  filters.setorCurso.includes(d.setorCurso) &&
-                  filters.curso.includes(d.curso)
+                  filters.setorCurso.includes(d.SETOR_CURSO) &&
+                  filters.curso.includes(d.CURSO)
               )
-              .map((d) => d.disciplina)
+              .map((d) => d.NOME_DISCIPLINA)
           )
         );
 
@@ -102,18 +102,18 @@ function FilterSide({
         .filter((d) => {
           const setorMatch =
             filters.setorCurso.length === 0 ||
-            filters.setorCurso.includes(d.setorCurso);
+            filters.setorCurso.includes(d.SETOR_CURSO);
 
           const cursoMatch =
-            filters.curso.length === 0 || filters.curso.includes(d.curso);
+            filters.curso.length === 0 || filters.curso.includes(d.CURSO);
 
           const disciplinaMatch =
             filters.disciplina.length === 0 ||
-            filters.disciplina.includes(d.disciplina);
+            filters.disciplina.includes(d.NOME_DISCIPLINA);
 
           return setorMatch && cursoMatch && disciplinaMatch;
         })
-        .map((d) => d.pergunta)
+        .map((d) => d.PERGUNTA)
     )
   );
 
@@ -215,7 +215,7 @@ function FilterSide({
               curso: [],
               disciplina: [],
               pergunta: [],
-              questionario: "Todos",
+              lotacao: [],
             })
           }
         >
