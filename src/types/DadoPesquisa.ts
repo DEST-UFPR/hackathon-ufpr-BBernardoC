@@ -6,4 +6,5 @@ export interface DadoPesquisa {
   SETOR_CURSO: string;
   NOME_DISCIPLINA: string;
   LOTACAO: string;
+  CODPROF: string;
 }

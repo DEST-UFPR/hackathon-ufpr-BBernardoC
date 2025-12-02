@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Box, Paper, Typography } from "@mui/material";
 import {
   BarChart,
@@ -9,9 +10,9 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
+
 import { DashboardFilters } from "@/components/Dashboard/FiltersPanel";
 import { transformarDadosPesquisa } from "@/utils/transformarDadosPesquisa";
-import dadosReais from "../../../cache/disciplina_presencial.json";
 import { DadoPesquisa } from "@/types/DadoPesquisa";
 
 // ================= TOOLTIP CUSTOMIZADO =================
@@ -86,8 +87,28 @@ interface GraficoIndividualProps {
 }
 
 function GraficoIndividual({ filters, title }: GraficoIndividualProps) {
-  const dados = dadosReais as DadoPesquisa[];
+  const [dados, setDados] = useState<DadoPesquisa[]>([]);
+  const [loading, setLoading] = useState(false);
 
+  // ==== Carrega o JSON correto baseado no tipo da pesquisa ====
+  useEffect(() => {
+    if (!filters.tipoPesquisa) {
+      setDados([]);
+      return;
+    }
+
+    setLoading(true);
+
+    import(`../../../cache/${filters.tipoPesquisa}.json`)
+      .then((mod) => setDados(mod.default))
+      .catch((err) => {
+        console.error("Erro ao carregar JSON:", err);
+        setDados([]);
+      })
+      .finally(() => setLoading(false));
+  }, [filters.tipoPesquisa]);
+
+  // ==== FILTRAGEM ====
   const dadosFiltrados = dados.filter((item) => {
     const setorMatch =
       filters.setorCurso.length === 0 ||
@@ -100,29 +121,38 @@ function GraficoIndividual({ filters, title }: GraficoIndividualProps) {
       filters.disciplina.length === 0 ||
       filters.disciplina.includes(item.NOME_DISCIPLINA);
 
+    const lotacaoMatch =
+      filters.lotacao.length === 0 ||
+      filters.lotacao.includes(item.LOTACAO || "");
+
     const perguntaMatch =
       filters.pergunta.length === 0 || filters.pergunta.includes(item.PERGUNTA);
 
-    return setorMatch && cursoMatch && disciplinaMatch && perguntaMatch;
+    return (
+      setorMatch &&
+      cursoMatch &&
+      disciplinaMatch &&
+      lotacaoMatch &&
+      perguntaMatch
+    );
   });
 
   const dadosGraficoOriginal = transformarDadosPesquisa(dadosFiltrados);
 
-  // ===== LISTA COMPLETA DE PERGUNTAS (para manter índice correto) =====
+  // Lista completa de perguntas para manter o índice original
   const todasPerguntas = Array.from(new Set(dados.map((d) => d.PERGUNTA)));
 
-  // ===== AGRUPAMENTO DAS RESPOSTAS =====
+  // ==== Ajuste final do dataset ====
   const dadosGrafico = dadosGraficoOriginal.map((item: any) => {
     const positivo = (item.Concordo || 0) + (item.Sim || 0);
     const negativo = (item.Discordo || 0) + (item["Não"] || 0);
     const neutro = item.Desconheço || 0;
 
-    // Encontra o índice original da pergunta
     const indiceOriginal = todasPerguntas.indexOf(item.pergunta);
 
     return {
       ...item,
-      indiceOriginal, // Adiciona o índice original
+      indiceOriginal,
       Positivo: Number(positivo.toFixed(2)),
       Neutro: Number(neutro.toFixed(2)),
       Negativo: Number(negativo.toFixed(2)),
@@ -150,17 +180,13 @@ function GraficoIndividual({ filters, title }: GraficoIndividualProps) {
       <Typography variant="h6" fontWeight="bold" gutterBottom color="primary">
         {title}
       </Typography>
-      <Typography variant="body2" color="text.secondary" mb={2}>
-        Distribuição percentual das respostas por pergunta (%)
-      </Typography>
 
-      {dadosGrafico.length === 0 ? (
-        <Typography
-          variant="body1"
-          color="text.secondary"
-          textAlign="center"
-          py={8}
-        >
+      {loading ? (
+        <Typography textAlign="center" py={4}>
+          Carregando dados...
+        </Typography>
+      ) : dadosGrafico.length === 0 ? (
+        <Typography textAlign="center" py={8}>
           Nenhum dado encontrado com os filtros selecionados.
         </Typography>
       ) : (
@@ -216,10 +242,7 @@ export default function GraficoDuplo({ filtersLeft, filtersRight }: Props) {
         gridTemplateColumns={{ xs: "1fr", lg: "1fr 1fr" }}
         gap={3}
       >
-        {/* GRÁFICO ESQUERDO */}
         <GraficoIndividual filters={filtersLeft} title="Gráfico 1" />
-
-        {/* GRÁFICO DIREITO */}
         <GraficoIndividual filters={filtersRight} title="Gráfico 2" />
       </Box>
     </Box>

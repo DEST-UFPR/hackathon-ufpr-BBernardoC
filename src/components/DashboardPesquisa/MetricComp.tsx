@@ -4,18 +4,18 @@ import {
   TrendingDown,
   Remove,
   Assessment,
-  School,
-  MenuBook,
   People,
+  MenuBook,
 } from "@mui/icons-material";
+
 import { DashboardFilters } from "@/components/Dashboard/FiltersPanel";
-import { transformarDadosPesquisa } from "@/utils/transformarDadosPesquisa";
-import dadosReais from "../../../cache/disciplina_presencial.json";
 import { DadoPesquisa } from "@/types/DadoPesquisa";
 
 interface Props {
   filtersLeft: DashboardFilters;
   filtersRight: DashboardFilters;
+  dadosLeft: DadoPesquisa[]; // ✅ NOVO!
+  dadosRight: DadoPesquisa[]; // ✅ NOVO!
 }
 
 interface MetricData {
@@ -27,44 +27,62 @@ interface MetricData {
 }
 
 // ================= CALCULA MÉTRICAS =================
-function calcularMetricas(filters: DashboardFilters): MetricData {
-  const dados = dadosReais as DadoPesquisa[];
+function calcularMetricas(
+  filters: DashboardFilters,
+  dados: DadoPesquisa[] // ✅ RECEBE OS DADOS CORRETOS
+): MetricData {
+  const isInstitucional = filters.tipoPesquisa === "institucional";
 
   const dadosFiltrados = dados.filter((item) => {
     const setorMatch =
       filters.setorCurso.length === 0 ||
       filters.setorCurso.includes(item.SETOR_CURSO);
-    const cursoMatch =
-      filters.curso.length === 0 || filters.curso.includes(item.CURSO);
-    const disciplinaMatch =
-      filters.disciplina.length === 0 ||
-      filters.disciplina.includes(item.NOME_DISCIPLINA);
+
+    const cursoOuLotacaoMatch = isInstitucional
+      ? filters.lotacao.length === 0 ||
+        filters.lotacao.includes(item.LOTACAO || "")
+      : filters.curso.length === 0 || filters.curso.includes(item.CURSO);
+
+    const disciplinaMatch = isInstitucional
+      ? true
+      : filters.disciplina.length === 0 ||
+        filters.disciplina.includes(item.NOME_DISCIPLINA);
+
     const perguntaMatch =
       filters.pergunta.length === 0 || filters.pergunta.includes(item.PERGUNTA);
 
-    return setorMatch && cursoMatch && disciplinaMatch && perguntaMatch;
+    return (
+      setorMatch && cursoOuLotacaoMatch && disciplinaMatch && perguntaMatch
+    );
   });
 
-  const dadosTransformados = transformarDadosPesquisa(dadosFiltrados);
+  // ====== MÉTRICAS DIRETAS (SEM AGRUPAR) ======
 
   const totalRespostas = dadosFiltrados.length;
-  const totalCursos = new Set(dadosFiltrados.map((d) => d.CURSO)).size;
-  const totalDisciplinas = new Set(dadosFiltrados.map((d) => d.NOME_DISCIPLINA))
-    .size;
+
+  const totalCursos = isInstitucional
+    ? new Set(dadosFiltrados.map((d) => d.LOTACAO).filter(Boolean)).size
+    : new Set(dadosFiltrados.map((d) => d.CURSO)).size;
+
+  const totalDisciplinas = isInstitucional
+    ? 0
+    : new Set(dadosFiltrados.map((d) => d.NOME_DISCIPLINA)).size;
+
   const totalPessoas = new Set(dadosFiltrados.map((d) => d.ID_PESQUISA)).size;
 
+  // ====== TAXA DE APROVAÇÃO CORRETA ======
   let somaPositivo = 0;
   let somaTotal = 0;
 
-  dadosTransformados.forEach((item: any) => {
-    const positivo = (item.Concordo_qtd || 0) + (item.Sim_qtd || 0);
-    const negativo = (item.Discordo_qtd || 0) + (item.Não_qtd || 0);
-    const neutro = item.Desconheço_qtd || 0;
-
-    somaPositivo += positivo;
-    somaTotal += positivo + negativo + neutro;
+  dadosFiltrados.forEach((d) => {
+    // só conta se o item tiver RESPOSTA válida
+    if (d.RESPOSTA) {
+      somaTotal++;
+      if (d.RESPOSTA === "Concordo" || d.RESPOSTA === "Sim") {
+        somaPositivo++;
+      }
+    }
   });
-
   const taxaAprovacao = somaTotal === 0 ? 0 : (somaPositivo / somaTotal) * 100;
 
   return {
@@ -185,9 +203,17 @@ function ComparisonCard({
 }
 
 // ================= COMPONENTE PRINCIPAL =================
-export default function ComparisonCards({ filtersLeft, filtersRight }: Props) {
-  const metricsLeft = calcularMetricas(filtersLeft);
-  const metricsRight = calcularMetricas(filtersRight);
+export default function ComparisonCards({
+  filtersLeft,
+  filtersRight,
+  dadosLeft,
+  dadosRight,
+}: Props) {
+  // ✅ Passa os dados corretos para cada lado
+  const metricsLeft = calcularMetricas(filtersLeft, dadosLeft);
+  const metricsRight = calcularMetricas(filtersRight, dadosRight);
+
+  const isInstitucional = filtersLeft.tipoPesquisa === "institucional";
 
   return (
     <Box sx={{ width: "100%", p: 2 }}>
@@ -213,11 +239,20 @@ export default function ComparisonCards({ filtersLeft, filtersRight }: Props) {
         />
 
         <ComparisonCard
-          title="Total de Respostas"
-          valueLeft={metricsLeft.totalRespostas}
-          valueRight={metricsRight.totalRespostas}
-          icon={<Assessment />}
+          title={isInstitucional ? "Lotação" : "Cursos"}
+          valueLeft={metricsLeft.totalCursos}
+          valueRight={metricsRight.totalCursos}
+          icon={<MenuBook />}
         />
+
+        {!isInstitucional && (
+          <ComparisonCard
+            title="Disciplinas"
+            valueLeft={metricsLeft.totalDisciplinas}
+            valueRight={metricsRight.totalDisciplinas}
+            icon={<MenuBook />}
+          />
+        )}
 
         <ComparisonCard
           title="Pessoas Avaliadas"
@@ -227,10 +262,10 @@ export default function ComparisonCards({ filtersLeft, filtersRight }: Props) {
         />
 
         <ComparisonCard
-          title="Disciplinas"
-          valueLeft={metricsLeft.totalDisciplinas}
-          valueRight={metricsRight.totalDisciplinas}
-          icon={<MenuBook />}
+          title="Total de Respostas"
+          valueLeft={metricsLeft.totalRespostas}
+          valueRight={metricsRight.totalRespostas}
+          icon={<Assessment />}
         />
       </Box>
     </Box>

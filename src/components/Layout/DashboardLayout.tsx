@@ -140,11 +140,31 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   };
 
   const menuItems = [
-    { text: "Dashboard", icon: <Dashboard />, active: true },
-    { text: "Avaliações", icon: <Assessment />, active: false },
-    { text: "Filtros", icon: <FilterList />, active: false },
-    { text: "Relatórios", icon: <TableChart />, active: false },
-    { text: "Configurações", icon: <Settings />, active: false },
+    {
+      text: "Dashboard",
+      icon: <Dashboard />,
+      active: true,
+    },
+    {
+      text: "Avaliações",
+      icon: <Assessment onClick={() => navigate("/")} />,
+      active: false,
+    },
+    {
+      text: "Filtros",
+      icon: <FilterList onClick={() => navigate("/")} />,
+      active: false,
+    },
+    {
+      text: "Relatórios",
+      icon: <TableChart onClick={() => navigate("/")} />,
+      active: false,
+    },
+    {
+      text: "Configurações",
+      icon: <Settings onClick={() => navigate("/")} />,
+      active: false,
+    },
   ];
 
   const drawer = (
@@ -164,6 +184,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                   ? "bg-primary text-primary-foreground hover:bg-primary-hover"
                   : "hover:bg-secondary text-foreground"
               }`}
+              onClick={() => navigate("/")}
             >
               <ListItemIcon
                 className={
@@ -205,9 +226,6 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" noWrap component="div">
-              Dashboard de Avaliação
-            </Typography>
           </div>
 
           <div>
@@ -247,6 +265,14 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               sx={{ ml: 1 }}
             >
               Comparação Avançada
+            </Button>
+
+            <Button
+              color="inherit"
+              onClick={() => navigate("/professor")}
+              sx={{ ml: 1 }}
+            >
+              Professor
             </Button>
           </div>
         </Toolbar>

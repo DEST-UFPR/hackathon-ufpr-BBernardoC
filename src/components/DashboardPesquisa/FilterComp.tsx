@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -9,11 +9,19 @@ import {
   TextField,
 } from "@mui/material";
 
-import dadosReais from "../../../cache/disciplina_presencial.json";
 import { DadoPesquisa } from "@/types/DadoPesquisa";
+
+// ================= MAPEAMENTO DOS TIPOS =================
+const TIPOS_PESQUISA = [
+  { label: "Disciplina Presencial", value: "disciplina_presencial" },
+  { label: "Disciplina EAD", value: "disciplina_ead" },
+  { label: "Curso", value: "cursos" },
+  { label: "Institucional", value: "institucional" },
+];
 
 // ================= INTERFACE =================
 export interface DashboardFilters {
+  tipoPesquisa: string;
   setorCurso: string[];
   curso: string[];
   disciplina: string[];
@@ -26,6 +34,8 @@ interface Props {
   filtersRight: DashboardFilters;
   onFiltersLeftChange: (filters: DashboardFilters) => void;
   onFiltersRightChange: (filters: DashboardFilters) => void;
+  onDadosLeftChange: (dados: DadoPesquisa[]) => void; // ✅ NOVO!
+  onDadosRightChange: (dados: DadoPesquisa[]) => void; // ✅ NOVO!
 }
 
 // ================= COMPONENTE INDIVIDUAL =================
@@ -33,19 +43,59 @@ interface FilterSideProps {
   title: string;
   filters: DashboardFilters;
   onFiltersChange: (filters: DashboardFilters) => void;
-  dados: DadoPesquisa[];
+  onDadosChange: (dados: DadoPesquisa[]) => void; // ✅ NOVO!
 }
 
 function FilterSide({
   title,
   filters,
   onFiltersChange,
-  dados,
+  onDadosChange, // ✅ NOVO!
 }: FilterSideProps) {
-  const handleChange = (field: keyof DashboardFilters, value: string[]) => {
+  const [dados, setDados] = useState<DadoPesquisa[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Carrega o JSON quando o tipo muda
+  useEffect(() => {
+    if (!filters.tipoPesquisa) {
+      setDados([]);
+      onDadosChange([]); // ✅ NOTIFICA O PAI!
+      return;
+    }
+
+    setLoading(true);
+
+    import(`../../../cache/${filters.tipoPesquisa}.json`)
+      .then((module) => {
+        const dadosCarregados = module.default as DadoPesquisa[];
+        setDados(dadosCarregados);
+        onDadosChange(dadosCarregados); // ✅ NOTIFICA O PAI!
+      })
+      .catch((error) => {
+        console.error(`Erro ao carregar ${filters.tipoPesquisa}.json:`, error);
+        setDados([]);
+        onDadosChange([]); // ✅ NOTIFICA O PAI!
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [filters.tipoPesquisa, onDadosChange]);
+
+  const handleChange = (
+    field: keyof DashboardFilters,
+    value: string | string[]
+  ) => {
     const updated = { ...filters, [field]: value };
 
-    // 🔁 RESET EM CASCATA (lógica consistente)
+    // 🔁 RESET EM CASCATA
+    if (field === "tipoPesquisa") {
+      updated.setorCurso = [];
+      updated.curso = [];
+      updated.disciplina = [];
+      updated.pergunta = [];
+      updated.lotacao = [];
+    }
+
     if (field === "setorCurso") {
       updated.curso = [];
       updated.disciplina = [];
@@ -111,10 +161,19 @@ function FilterSide({
             filters.disciplina.length === 0 ||
             filters.disciplina.includes(d.NOME_DISCIPLINA);
 
-          return setorMatch && cursoMatch && disciplinaMatch;
+          const lotacaoMatch =
+            filters.lotacao.length === 0 ||
+            filters.lotacao.includes(d.LOTACAO || "");
+
+          return setorMatch && cursoMatch && disciplinaMatch && lotacaoMatch;
         })
         .map((d) => d.PERGUNTA)
     )
+  );
+
+  // ✅ LOTAÇÕES (para tipo institucional)
+  const lotacoes = Array.from(
+    new Set(dados.map((d) => d.LOTACAO || "").filter((l) => l !== ""))
   );
 
   return (
@@ -124,43 +183,89 @@ function FilterSide({
       </Typography>
 
       <Box display="flex" flexDirection="column" gap={2}>
-        {/* SETOR */}
+        {/* TIPO DE PESQUISA */}
         <Autocomplete
-          multiple
-          options={setores}
-          value={filters.setorCurso}
-          onChange={(_, newValue) => handleChange("setorCurso", newValue)}
+          options={TIPOS_PESQUISA}
+          value={
+            TIPOS_PESQUISA.find((t) => t.value === filters.tipoPesquisa) || null
+          }
+          onChange={(_, value) =>
+            handleChange("tipoPesquisa", value?.value || "")
+          }
+          getOptionLabel={(option) => option.label}
           renderInput={(params) => (
-            <TextField {...params} label="Setor" size="small" />
+            <TextField
+              {...params}
+              label="Tipo de Pesquisa"
+              size="small"
+              required
+            />
           )}
-          ChipProps={{ size: "small" }}
+          disabled={loading}
         />
 
-        {/* CURSO */}
-        <Autocomplete
-          multiple
-          options={cursos}
-          value={filters.curso}
-          onChange={(_, newValue) => handleChange("curso", newValue)}
-          disabled={cursos.length === 0}
-          renderInput={(params) => (
-            <TextField {...params} label="Curso" size="small" />
-          )}
-          ChipProps={{ size: "small" }}
-        />
+        {/* FILTROS PARA NÃO-INSTITUCIONAL */}
+        {filters.tipoPesquisa !== "institucional" && (
+          <>
+            {/* SETOR */}
+            <Autocomplete
+              multiple
+              options={setores}
+              value={filters.setorCurso}
+              onChange={(_, newValue) => handleChange("setorCurso", newValue)}
+              disabled={
+                !filters.tipoPesquisa || loading || setores.length === 0
+              }
+              renderInput={(params) => (
+                <TextField {...params} label="Setor" size="small" />
+              )}
+              ChipProps={{ size: "small" }}
+            />
 
-        {/* DISCIPLINA */}
-        <Autocomplete
-          multiple
-          options={disciplinas}
-          value={filters.disciplina}
-          onChange={(_, newValue) => handleChange("disciplina", newValue)}
-          disabled={disciplinas.length === 0}
-          renderInput={(params) => (
-            <TextField {...params} label="Disciplina" size="small" />
-          )}
-          ChipProps={{ size: "small" }}
-        />
+            {/* CURSO */}
+            <Autocomplete
+              multiple
+              options={cursos}
+              value={filters.curso}
+              onChange={(_, newValue) => handleChange("curso", newValue)}
+              disabled={cursos.length === 0}
+              renderInput={(params) => (
+                <TextField {...params} label="Curso" size="small" />
+              )}
+              ChipProps={{ size: "small" }}
+            />
+
+            {/* DISCIPLINA — BLOQUEADA QUANDO tipoPesquisa = cursos */}
+            {filters.tipoPesquisa !== "cursos" && (
+              <Autocomplete
+                multiple
+                options={disciplinas}
+                value={filters.disciplina}
+                onChange={(_, newValue) => handleChange("disciplina", newValue)}
+                disabled={disciplinas.length === 0}
+                renderInput={(params) => (
+                  <TextField {...params} label="Disciplina" size="small" />
+                )}
+                ChipProps={{ size: "small" }}
+              />
+            )}
+          </>
+        )}
+
+        {/* FILTRO DE LOTAÇÃO PARA INSTITUCIONAL */}
+        {filters.tipoPesquisa === "institucional" && (
+          <Autocomplete
+            multiple
+            options={lotacoes}
+            value={filters.lotacao}
+            onChange={(_, newValue) => handleChange("lotacao", newValue)}
+            disabled={!filters.tipoPesquisa || loading || lotacoes.length === 0}
+            renderInput={(params) => (
+              <TextField {...params} label="Lotação" size="small" />
+            )}
+            ChipProps={{ size: "small" }}
+          />
+        )}
 
         {/* PERGUNTAS */}
         <Autocomplete
@@ -168,6 +273,7 @@ function FilterSide({
           options={perguntas}
           value={filters.pergunta}
           onChange={(_, newValue) => handleChange("pergunta", newValue)}
+          disabled={!filters.tipoPesquisa || loading}
           getOptionLabel={(option) => {
             const index = perguntas.indexOf(option);
             return `Q${index + 1} - ${option}`;
@@ -211,6 +317,7 @@ function FilterSide({
           variant="outlined"
           onClick={() =>
             onFiltersChange({
+              tipoPesquisa: "",
               setorCurso: [],
               curso: [],
               disciplina: [],
@@ -232,9 +339,9 @@ export default function FilterComp({
   filtersRight,
   onFiltersLeftChange,
   onFiltersRightChange,
+  onDadosLeftChange, // ✅ NOVO!
+  onDadosRightChange, // ✅ NOVO!
 }: Props) {
-  const dados = dadosReais as DadoPesquisa[];
-
   return (
     <Box sx={{ width: "100%", p: 2 }}>
       <Box
@@ -246,14 +353,14 @@ export default function FilterComp({
           title="Filtros - Lado Esquerdo"
           filters={filtersLeft}
           onFiltersChange={onFiltersLeftChange}
-          dados={dados}
+          onDadosChange={onDadosLeftChange} // ✅ NOVO!
         />
 
         <FilterSide
           title="Filtros - Lado Direito"
           filters={filtersRight}
           onFiltersChange={onFiltersRightChange}
-          dados={dados}
+          onDadosChange={onDadosRightChange} // ✅ NOVO!
         />
       </Box>
     </Box>
