@@ -10,12 +10,16 @@ def import_data(type, file_path, sheet_name):
     sheets = {sh.lower(): sh for sh in xls.sheet_names}
 
     if sheet_name.lower() not in sheets:
+        xls.close()
         raise ValueError(f"Aba '{sheet_name}' não encontrada (ignorar case).")
 
     sheet_real = sheets[sheet_name.lower()]
 
     # Lê o Excel
-    df = pd.read_excel(file_path, sheet_name=sheet_real)
+    df = pd.read_excel(xls, sheet_name=sheet_real)
+
+    # FECHA O HANDLE DO ARQUIVO
+    xls.close()
 
     tabela = type
 
@@ -32,11 +36,9 @@ def import_data(type, file_path, sheet_name):
             VALUES ({placeholders})
         """
 
-        # Converte para tuplas rapidamente
         dados = [tuple(r) for r in df.itertuples(index=False, name=None)]
-
         cursor.executemany(sql, dados)
-        
+
         conn.commit()
     finally:
         conn.close()
