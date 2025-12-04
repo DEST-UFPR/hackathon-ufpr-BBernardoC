@@ -1,6 +1,8 @@
 # 📊 Hackathon
 Um dashboard interativo para análise e visualização de dados de pesquisas acadêmicas, com suporte a múltiplas categorias de dados (disciplinas presenciais, EAD, cursos e institucional).
 
+### Upload e login/register apenas clonando o repo
+
 ## Site disponivel em:
 
 https://insight-hackathon-ufpr.vercel.app/
