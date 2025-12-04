@@ -1,5 +1,4 @@
-# 📊 Insight Dashboard
-
+# 📊 Hackathon
 Um dashboard interativo para análise e visualização de dados de pesquisas acadêmicas, com suporte a múltiplas categorias de dados (disciplinas presenciais, EAD, cursos e institucional).
 
 ## Site disponivel em:
@@ -13,8 +12,7 @@ https://insight-hackathon-ufpr.vercel.app/
 #### 1. Clone o repositório
 
 ```bash
-git clone https://github.com/BBernardoC/insight-dashboard.git
-cd insight-dashboard
+git clone https://github.com/DEST-UFPR/hackathon-ufpr-BBernardoC.git
 ```
 
 #### 2. Instale as dependências do frontend
