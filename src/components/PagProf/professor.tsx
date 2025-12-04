@@ -37,6 +37,8 @@ const TIPOS_PESQUISA = [
   { label: "Disciplina EAD", value: "disciplina_ead" },
 ];
 
+// Define quais tipos têm arquivos divididos em partes
+const TIPOS_DIVIDIDOS = ["disciplina_presencial"];
 // ================= INTERFACE =================
 export interface ProfessorFilters {
   tipoPesquisa: string;
@@ -81,18 +83,70 @@ function FiltersPanel({
   const [dados, setDados] = useState<DadoPesquisa[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Carrega o JSON quando o tipo muda
   useEffect(() => {
-    async function loadData() {
+    async function loadDataUnico() {
       if (!filters.tipoPesquisa) return;
-      const resp = await fetch(`/cache/${filters.tipoPesquisa}.json`);
-      const json = await resp.json();
 
-      setDados(json); // <-- AQUI!
-      onDadosChange(json);
+      // Se for tipo dividido, não faz nada aqui
+      if (TIPOS_DIVIDIDOS.includes(filters.tipoPesquisa)) return;
+
+      setLoading(true);
+
+      try {
+        const resp = await fetch(`/cache/${filters.tipoPesquisa}.json`);
+        const json = await resp.json();
+
+        setDados(json);
+        onDadosChange(json);
+      } catch (error) {
+        console.error("Erro ao carregar dados (único):", error);
+        setDados([]);
+        onDadosChange([]);
+      } finally {
+        setLoading(false);
+      }
     }
 
-    loadData();
+    loadDataUnico();
+  }, [filters.tipoPesquisa]);
+
+  // ================= USEEFFECT 2: ARQUIVOS DIVIDIDOS =================
+  useEffect(() => {
+    async function loadDataDividido() {
+      if (!filters.tipoPesquisa) return;
+
+      // Se NÃO for tipo dividido, não faz nada aqui
+      if (!TIPOS_DIVIDIDOS.includes(filters.tipoPesquisa)) return;
+
+      setLoading(true);
+
+      try {
+        // Carrega as duas partes em paralelo
+        const [resp1, resp2] = await Promise.all([
+          fetch(`/cache/${filters.tipoPesquisa}_parte1.json`),
+          fetch(`/cache/${filters.tipoPesquisa}_parte2.json`),
+        ]);
+
+        const [parte1, parte2] = await Promise.all([
+          resp1.json(),
+          resp2.json(),
+        ]);
+
+        // Mescla os arrays
+        const jsonCompleto = [...parte1, ...parte2];
+
+        setDados(jsonCompleto);
+        onDadosChange(jsonCompleto);
+      } catch (error) {
+        console.error("Erro ao carregar dados (dividido):", error);
+        setDados([]);
+        onDadosChange([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadDataDividido();
   }, [filters.tipoPesquisa]);
 
   const handleChange = (
